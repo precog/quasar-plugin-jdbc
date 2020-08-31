@@ -29,7 +29,7 @@ import cats.effect._
 import cats.effect.concurrent.Ref
 import cats.implicits._
 
-import fs2.Stream
+import fs2.{Pipe, Stream}
 
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
@@ -41,20 +41,20 @@ import quasar.connector.{MonadResourceErr, ResourceError}
 
 object JdbcCreateSink {
   type JdbcSink[F[_], I, T] =
-    (Either[I, (I, I)], NonEmptyList[(I, T)], Stream[F, Byte]) => Stream[F, Unit]
+    (Either[I, (I, I)], NonEmptyList[(I, T)]) => Pipe[F, Byte, Unit]
 
   def apply[F[_]: MonadResourceErr: Sync, T](
       hygiene: Hygiene,
       logger: Logger)(
       jdbcSink: JdbcSink[F, hygiene.HygienicIdent, T])(
       implicit timer: Timer[F])
-      : (ResourcePath, NonEmptyList[Column[T]], Stream[F, Byte]) => Stream[F, Unit] = { (path, columns, bytes) =>
+      : (ResourcePath, NonEmptyList[Column[T]]) => Pipe[F, Byte, Unit] = { (path, columns) =>
 
     import hygiene._
 
     val log = Slf4jLogger.getLoggerFromSlf4j[F](logger.underlying)
 
-    Stream.force(for {
+    bytes => Stream.force(for {
       dbo <- resourcePathRef(path) match {
         case Some(ref) => ref.pure[F]
         case _ => MonadResourceErr[F].raiseError(ResourceError.notAResource(path))
@@ -89,7 +89,7 @@ object JdbcCreateSink {
 
       hygienicColumns = columns.map(c => (hygienicIdent(Ident(c.name)), c.tpe))
 
-      sunk = jdbcSink(hygienicRef, hygienicColumns, instrumentedBytes) ++ Stream.eval_(ingestSucceeded)
+      sunk = instrumentedBytes.through(jdbcSink(hygienicRef, hygienicColumns)) ++ Stream.eval_(ingestSucceeded)
 
       out = sunk onError {
         case t => Stream.eval(for {
