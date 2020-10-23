@@ -30,6 +30,10 @@ import scala.concurrent.duration._
   *                              idle connections exceeding their lifetime will be replaced with
   *                              new ones. Make sure to set this several seconds shorter than any
   *                              database or infrastructure imposed connection time limit. (default: 30min)
+  * @param connectionInitFailTimeout the time before the pool initialization fails, or 0 to
+  *                                  validate connection setup but continue with pool start, or less than
+  *                                  zero to skip all initialization checks and start the pool without delay.
+  *                                  (default: less than zero)
   */
 final case class TransactorConfig(
     driverConfig: JdbcDriverConfig,
@@ -37,12 +41,14 @@ final case class TransactorConfig(
     connectionReadOnly: Boolean,
     connectionTimeout: FiniteDuration,
     connectionValidationTimeout: FiniteDuration,
-    connectionMaxLifetime: FiniteDuration)
+    connectionMaxLifetime: FiniteDuration,
+    connectionInitFailTimeout: FiniteDuration)
 
 object TransactorConfig {
   val DefaultConnectionTimeout: FiniteDuration = 30.seconds
   val DefaultConnectionValidationTimeout: FiniteDuration = 5.seconds
   val DefaultConnectionMaxLifetime: FiniteDuration = 30.minutes
+  val DefaultInitFailTimeout: FiniteDuration = 1.milli
 
   def withDefaultTimeouts(
       driverConfig: JdbcDriverConfig,
@@ -55,5 +61,6 @@ object TransactorConfig {
       connectionReadOnly = connectionReadOnly,
       connectionTimeout = DefaultConnectionTimeout,
       connectionValidationTimeout = DefaultConnectionValidationTimeout,
-      connectionMaxLifetime = DefaultConnectionMaxLifetime)
+      connectionMaxLifetime = DefaultConnectionMaxLifetime,
+      connectionInitFailTimeout = DefaultInitFailTimeout)
 }
