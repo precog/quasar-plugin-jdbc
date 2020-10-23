@@ -33,7 +33,7 @@ import scala.concurrent.duration._
   * @param connectionInitFailTimeout the time before the pool initialization fails, or 0 to
   *                                  validate connection setup but continue with pool start, or less than
   *                                  zero to skip all initialization checks and start the pool without delay.
-  *                                  (default: less than zero)
+  *                                  (default: 1ms)
   */
 final case class TransactorConfig(
     driverConfig: JdbcDriverConfig,
