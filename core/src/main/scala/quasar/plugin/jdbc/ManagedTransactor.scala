@@ -60,7 +60,7 @@ object ManagedTransactor {
       c.setValidationTimeout(config.connectionValidationTimeout.toMillis)
       c.setMaxLifetime(config.connectionMaxLifetime.toMillis)
 
-      c.setInitializationFailTimeout(config.connectionInitFailTimeout.toMillis)
+      c.setInitializationFailTimeout(config.connectionPoolInitMode.toInitFailTimeout)
 
       c
     }
