@@ -1,4 +1,4 @@
-ThisBuild / crossScalaVersions := Seq("2.12.11")
+ThisBuild / crossScalaVersions := Seq("2.12.12")
 ThisBuild / scalaVersion := (ThisBuild / crossScalaVersions).value.head
 
 ThisBuild / githubRepository := "quasar-plugin-jdbc"
@@ -11,7 +11,7 @@ ThisBuild / scmInfo := Some(ScmInfo(
 
 ThisBuild / publishAsOSSProject := true
 
-val DoobieVersion = "0.9.0"
+val DoobieVersion = "0.9.2"
 
 lazy val quasarVersion =
   Def.setting[String](managedVersions.value("precog-quasar"))
@@ -37,7 +37,7 @@ lazy val core = project
       "org.tpolecat" %% "doobie-core" % DoobieVersion,
       "org.tpolecat" %% "doobie-hikari" % DoobieVersion,
 
-      "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.1",
+      "io.chrisdavenport" %% "log4cats-slf4j" % "1.1.1",
 
-      "org.specs2" %% "specs2-core" % "4.9.4" % Test
+      "org.specs2" %% "specs2-core" % "4.10.5" % Test
     ))
