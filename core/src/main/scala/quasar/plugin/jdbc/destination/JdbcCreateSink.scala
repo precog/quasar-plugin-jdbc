@@ -62,7 +62,7 @@ object JdbcCreateSink {
 
       hygienicRef = dbo.bimap(
         hygienicIdent(_),
-        { case (f, s) => (hygienicIdent(f), hygienicIdent(f)) })
+        { case (f, s) => (hygienicIdent(f), hygienicIdent(s)) })
 
       dboDebug = dbo.fold(
         _.asString,
