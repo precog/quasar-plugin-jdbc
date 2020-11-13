@@ -1,13 +1,13 @@
 ThisBuild / crossScalaVersions := Seq("2.12.12")
 ThisBuild / scalaVersion := (ThisBuild / crossScalaVersions).value.head
 
-ThisBuild / githubRepository := "quasar-plugin-jdbc"
+ThisBuild / githubRepository := "quasar-lib-jdbc"
 
-ThisBuild / homepage := Some(url("https://github.com/precog/quasar-plugin-jdbc"))
+ThisBuild / homepage := Some(url("https://github.com/precog/quasar-lib-jdbc"))
 
 ThisBuild / scmInfo := Some(ScmInfo(
-  url("https://github.com/precog/quasar-plugin-jdbc"),
-  "scm:git@github.com:precog/quasar-plugin-jdbc.git"))
+  url("https://github.com/precog/quasar-lib-jdbc"),
+  "scm:git@github.com:precog/quasar-lib-jdbc.git"))
 
 ThisBuild / publishAsOSSProject := true
 
@@ -28,7 +28,7 @@ lazy val root = project
 lazy val core = project
   .in(file("core"))
   .settings(
-    name := "quasar-plugin-jdbc",
+    name := "quasar-lib-jdbc",
     libraryDependencies ++= Seq(
       "com.precog" %% "quasar-connector" % quasarVersion.value,
 
