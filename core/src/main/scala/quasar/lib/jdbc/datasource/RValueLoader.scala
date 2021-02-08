@@ -32,7 +32,7 @@ import fs2.Stream
 
 import quasar.ScalarStages
 import quasar.common.data.{QDataRValue, RValue}
-import quasar.connector.QueryResult
+import quasar.connector.{QueryResult, ResultData}
 import quasar.connector.datasource.BatchLoader
 
 object RValueLoader {
@@ -74,6 +74,6 @@ object RValueLoader {
             (Stream.empty: Stream[ConnectionIO, RValue]).pure[Resource[ConnectionIO, ?]]
         }
 
-        rvalues.map(QueryResult.parsed(QDataRValue, _, stages))
+        rvalues.map(rs => QueryResult.parsed(QDataRValue, ResultData.Continuous(rs), stages))
     }
 }
