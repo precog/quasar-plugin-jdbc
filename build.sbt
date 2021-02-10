@@ -41,3 +41,5 @@ lazy val core = project
 
       "org.specs2" %% "specs2-core" % "4.10.5" % Test
     ))
+  .evictToLocal("QUASAR_PATH", "api", true)
+  .evictToLocal("QUASAR_PATH", "connector", true)
