@@ -19,10 +19,11 @@ package quasar.lib.jdbc
 import java.lang.String
 import java.util.concurrent.Executors
 
-import scala.{Int, StringContext}
+import scala._
 import scala.concurrent.ExecutionContext
 
 import cats.effect._
+import cats.implicits._
 
 import com.zaxxer.hikari.HikariConfig
 
@@ -35,6 +36,42 @@ object ManagedTransactor {
   def apply[F[_]: Async: ContextShift](
       name: String,
       config: TransactorConfig)
+      : Resource[F, Transactor[F]] = 
+    config.poolConfig match {
+      case None => notPooled[F](name, config.driverConfig)
+      case Some(pc) => pooled[F](name, config.driverConfig, pc)
+    }
+
+  private def notPooled[F[_]: Async: ContextShift](
+      name: String,
+      driverConfig: JdbcDriverConfig)
+      : Resource[F, Transactor[F]] = {
+    import JdbcDriverConfig._
+    driverConfig match {
+      case JdbcDataSourceConfig(className, props) =>
+        Resource.liftF(Async[F].raiseError(new IllegalArgumentException("JdbcDataSourceConfig is not supported")))
+
+      case JdbcDriverManagerConfig(url, driverClassName) => 
+        for {
+          transacting <- transactPool[F](s"$name.transact")
+
+          clName <- Resource.liftF(
+            driverClassName.map(_.pure[F])
+              .getOrElse(Async[F].raiseError(new IllegalArgumentException("JdbcDriverManagerConfig needs a driver class"))))
+
+          xa = Transactor.fromDriverManager[F](
+            clName,
+            s"${url.getScheme}:${url.getSchemeSpecificPart}",
+            transacting
+          )
+        } yield xa        
+    }
+  }
+
+  private def pooled[F[_]: Async: ContextShift](
+      name: String,
+      driverConfig: JdbcDriverConfig,
+      poolConfig: PoolConfig)
       : Resource[F, Transactor[F]] = {
 
     import JdbcDriverConfig._
@@ -44,7 +81,7 @@ object ManagedTransactor {
 
       c.setPoolName(s"$name.pool")
 
-      config.driverConfig match {
+      driverConfig match {
         case JdbcDataSourceConfig(className, props) =>
           c.setDataSourceClassName(className)
           props.foreach { case (k, v) => c.addDataSourceProperty(k, v) }
@@ -54,13 +91,13 @@ object ManagedTransactor {
           className.foreach(c.setDriverClassName)
       }
 
-      c.setMaximumPoolSize(config.connectionMaxConcurrency)
-      c.setReadOnly(config.connectionReadOnly)
-      c.setConnectionTimeout(config.connectionTimeout.toMillis)
-      c.setValidationTimeout(config.connectionValidationTimeout.toMillis)
-      c.setMaxLifetime(config.connectionMaxLifetime.toMillis)
+      c.setMaximumPoolSize(poolConfig.connectionMaxConcurrency)
+      c.setReadOnly(poolConfig.connectionReadOnly)
+      c.setConnectionTimeout(poolConfig.connectionTimeout.toMillis)
+      c.setValidationTimeout(poolConfig.connectionValidationTimeout.toMillis)
+      c.setMaxLifetime(poolConfig.connectionMaxLifetime.toMillis)
 
-      c.setInitializationFailTimeout(config.connectionPoolInitMode.toInitFailTimeout)
+      c.setInitializationFailTimeout(poolConfig.connectionPoolInitMode.toInitFailTimeout)
 
       c
     }
@@ -68,7 +105,7 @@ object ManagedTransactor {
     for {
       hc <- Resource.liftF(hikariConfig)
 
-      awaiting <- awaitPool[F](s"$name.await", config.connectionMaxConcurrency)
+      awaiting <- awaitPool[F](s"$name.await", poolConfig.connectionMaxConcurrency)
       transacting <- transactPool[F](s"$name.transact")
 
       xa <-
