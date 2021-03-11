@@ -35,6 +35,9 @@ import scala.concurrent.duration._
   */
 final case class TransactorConfig(
     driverConfig: JdbcDriverConfig,
+    poolConfig: Option[PoolConfig])
+
+final case class PoolConfig(
     connectionMaxConcurrency: Int,
     connectionReadOnly: Boolean,
     connectionTimeout: FiniteDuration,
@@ -54,10 +57,11 @@ object TransactorConfig {
       : TransactorConfig =
     TransactorConfig(
       driverConfig = driverConfig,
-      connectionMaxConcurrency = connectionMaxConcurrency,
-      connectionReadOnly = connectionReadOnly,
-      connectionTimeout = DefaultConnectionTimeout,
-      connectionValidationTimeout = DefaultConnectionValidationTimeout,
-      connectionMaxLifetime = DefaultConnectionMaxLifetime,
-      connectionPoolInitMode = PoolInitMode.Validate)
+      poolConfig = Some(PoolConfig(
+        connectionMaxConcurrency = connectionMaxConcurrency,
+        connectionReadOnly = connectionReadOnly,
+        connectionTimeout = DefaultConnectionTimeout,
+        connectionValidationTimeout = DefaultConnectionValidationTimeout,
+        connectionMaxLifetime = DefaultConnectionMaxLifetime,
+        connectionPoolInitMode = PoolInitMode.Validate)))
 }
