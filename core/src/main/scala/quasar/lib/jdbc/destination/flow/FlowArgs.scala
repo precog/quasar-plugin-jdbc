@@ -27,8 +27,6 @@ import quasar.api.Column
 import quasar.api.resource.ResourcePath
 import quasar.connector.destination.{WriteMode => QWriteMode, ResultSink}, ResultSink.{UpsertSink, AppendSink}
 
-import org.slf4s.Logger
-
 sealed trait FlowArgs[T] {
   val path: ResourcePath
   val writeMode: QWriteMode

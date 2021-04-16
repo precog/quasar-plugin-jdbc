@@ -18,26 +18,14 @@ package quasar.lib.jdbc.destination.flow
 
 import slamdata.Predef._
 
-import cats.data._
-import cats.effect.{Effect, Sync}
-import cats.implicits._
-
-import doobie._
-import doobie.implicits._
+import cats.effect.Sync
 
 import fs2.{Pipe, Stream}
 
-import quasar.api.Column
 import quasar.api.push.OffsetKey
-import quasar.api.resource._
 import quasar.connector._
-import quasar.connector.destination.{WriteMode => QWriteMode, ResultSink}, ResultSink.{UpsertSink, AppendSink}
-import quasar.connector.render.RenderConfig
-import quasar.lib.jdbc.destination.WriteMode
 
 import org.slf4s.Logger
-
-import skolems.∀
 
 object implicits {
   implicit class PipeLogger[F[_]: Sync, A, B, C](pipe: Pipe[F, DataEvent[C, OffsetKey.Actual[A]], B]) {
