@@ -49,6 +49,10 @@ trait FlowSinks[F[_], T, C] {
   val flowTransactor: Transactor[F]
   val flowLogger: Logger
 
+
+  def flowSinks(implicit F: Sync[F]): NonEmptyList[ResultSink[F, T]] =
+    NonEmptyList.of(ResultSink.create(create), ResultSink.upsert(upsert), ResultSink.append(append))
+
   def create(path: ResourcePath, cols: NonEmptyList[Column[T]])(implicit F: Bracket[F, Throwable])
       : (RenderConfig[C], Pipe[F, C, Unit]) = {
     val args = FlowArgs.ofCreate(path, cols)
