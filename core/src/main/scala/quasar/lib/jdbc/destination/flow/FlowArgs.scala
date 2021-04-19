@@ -31,8 +31,8 @@ sealed trait FlowArgs[T] {
   val path: ResourcePath
   val writeMode: QWriteMode
   val columns: NonEmptyList[Column[T]]
-  val idColumn: Option[Column[_]]
-  val filterColumn: Option[Column[_]]
+  val idColumn: Option[Column[T]]
+  val filterColumn: Option[Column[T]]
 }
 
 object FlowArgs {
