@@ -24,7 +24,6 @@ import java.lang.String
 import quasar.api.resource.{/:, ResourcePath}
 
 package object jdbc {
-
   /** A reference to a database object. */
   type DboRef = Either[Ident, (Ident, Ident)]
 
