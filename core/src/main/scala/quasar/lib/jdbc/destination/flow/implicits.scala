@@ -18,7 +18,7 @@ package quasar.lib.jdbc.destination.flow
 
 import slamdata.Predef._
 
-import cats.effect.Sync
+import cats.effect.{ExitCase, Sync}
 
 import fs2.{Pipe, Stream}
 
@@ -47,9 +47,13 @@ object implicits {
   implicit class StartEndLogger[F[_]: Sync, A, B](pipe: Pipe[F, A, B]) {
     def logStartAndEnd(logger: Logger): Pipe[F, A, B] = { events =>
       def trace(msg: => String) = Sync[F].delay(logger.trace(msg))
-      Stream.eval_(trace("Strating load")) ++
-      events.through(pipe) ++
-      Stream.eval_(trace("Finished load"))
+      val messaging = Stream.bracketCase(trace("Starting load")) { (_: Unit, c: ExitCase[Throwable]) => c match {
+        case ExitCase.Completed => trace("Finished load")
+        case ExitCase.Canceled => trace("Canceled load")
+        case ExitCase.Error(t) => trace(s"An error occured during data load: {t.getMessage}")
+      }}
+
+      messaging >> events.through(pipe)
     }
   }
 }
