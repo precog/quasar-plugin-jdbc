@@ -47,7 +47,7 @@ package object datasource {
   // A constant identifying a SQL type from java.sql.Types
   type SqlType = Int
 
-  type JdbcLoader[F[_], A] = BatchLoader[Resource[F, ?], JdbcLoader.Args[A], QueryResult[F]]
+  type JdbcLoader[F[_], A] = BatchLoader[Resource[F, ?], JdbcLoader.Args[A], Either[String, QueryResult[F]]]
 
   type MaskInterpreter[A] =
     JdbcLoader.Args[A] => ConnectionIO[(A, Option[A], ColumnSelection[A], ScalarStages)]
