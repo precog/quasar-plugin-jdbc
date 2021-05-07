@@ -59,7 +59,7 @@ object RValueLoader {
       (args, offset) => args match {
         case (table, schema, columns, stages) =>
           val dbObject =
-            schema.fold(table.fr0)(_.fr0 ++ fr0"." ++ table.fr)
+            schema.fold(table.fr)(_.fr0 ++ fr0"." ++ table.fr)
 
           val projections = Some(columns) collect {
             case ColumnSelection.Explicit(idents) =>
