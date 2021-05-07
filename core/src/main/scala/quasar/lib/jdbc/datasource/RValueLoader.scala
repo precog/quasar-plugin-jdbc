@@ -20,6 +20,7 @@ import quasar.lib.jdbc._
 
 import scala.{Stream => _, _}
 
+import java.lang.String
 import java.sql.ResultSet
 
 import cats.effect.Resource
@@ -32,48 +33,70 @@ import fs2.Stream
 
 import quasar.ScalarStages
 import quasar.common.data.{QDataRValue, RValue}
-import quasar.connector.{QueryResult, ResultData}
+import quasar.connector.{Offset, QueryResult, ResultData}
 import quasar.connector.datasource.BatchLoader
 
 object RValueLoader {
   type Args[A] = (A, Option[A], ColumnSelection[A], ScalarStages)
 
+  // This is kind of safe, since incremental loading enabled/disabled by constants in FE
   def apply[I <: Hygienic](
       logHandler: LogHandler,
       resultChunkSize: Int,
       rvalueColumn: RValueColumn)
-      : BatchLoader[Resource[ConnectionIO, ?], Args[I], QueryResult[ConnectionIO]] =
-    BatchLoader.Full[Resource[ConnectionIO, ?], Args[I], QueryResult[ConnectionIO]] {
-      case (table, schema, columns, stages) =>
-        val dbObject0 =
-          schema.fold(table.fr0)(_.fr0 ++ fr0"." ++ table.fr0)
+      : BatchLoader[Resource[ConnectionIO, *], Args[I], Either[String, QueryResult[ConnectionIO]]] =
+    seek(logHandler, resultChunkSize, rvalueColumn, { off =>
+      Left("Seek not implemented")
+    })
 
-        val projections = Some(columns) collect {
-          case ColumnSelection.Explicit(idents) =>
-            idents.map(_.fr0).intercalate(fr",")
+  def seek[I <: Hygienic](
+      logHandler: LogHandler,
+      resultChunkSize: Int,
+      rvalueColumn: RValueColumn,
+      offsetToFragment: Offset => Either[String, Fragment])
+      : BatchLoader[Resource[ConnectionIO, ?], Args[I], Either[String, QueryResult[ConnectionIO]]] =
+    BatchLoader.Seek[Resource[ConnectionIO, ?], Args[I], Either[String, QueryResult[ConnectionIO]]] {
+      (args, offset) => args match {
+        case (table, schema, columns, stages) =>
+          val dbObject =
+            schema.fold(table.fr)(_.fr0 ++ fr0"." ++ table.fr)
 
-          case ColumnSelection.All => fr0"*"
-        }
+          val projections = Some(columns) collect {
+            case ColumnSelection.Explicit(idents) =>
+              idents.map(_.fr0).intercalate(fr",")
 
-        val rvalues = projections match {
-          case Some(prjs) =>
-            val sql =
-              (fr"SELECT" ++ prjs ++ fr" FROM" ++ dbObject0).query[Unit].sql
+            case ColumnSelection.All => fr0"*"
+          }
 
-            val ps =
-              FC.prepareStatement(
-                sql,
-                ResultSet.TYPE_FORWARD_ONLY,
-                ResultSet.CONCUR_READ_ONLY)
+          val offsetFragment = offset match {
+            case None => Right(fr0"")
+            case Some(o) => offsetToFragment(o).map(fr"WHERE" ++ _)
+          }
 
-            loggedRValueQuery(sql, ps, resultChunkSize, logHandler)(
-              rvalueColumn.isSupported,
-              rvalueColumn.unsafeRValue)
+          val rvalues = projections match {
+            case Some(prjs) =>
+              offsetFragment traverse { ofr =>
+                val sql =
+                  (fr"SELECT" ++ prjs ++ fr" FROM" ++ dbObject ++ ofr).query[Unit].sql
 
-          case None =>
-            (Stream.empty: Stream[ConnectionIO, RValue]).pure[Resource[ConnectionIO, ?]]
-        }
 
-        rvalues.map(rs => QueryResult.parsed(QDataRValue, ResultData.Continuous(rs), stages))
-    }
+                val ps =
+                  FC.prepareStatement(
+                    sql,
+                    ResultSet.TYPE_FORWARD_ONLY,
+                    ResultSet.CONCUR_READ_ONLY)
+
+                loggedRValueQuery(sql, ps, resultChunkSize, logHandler)(
+                  rvalueColumn.isSupported,
+                  rvalueColumn.unsafeRValue)
+              }
+
+            case None =>
+              (Stream.empty: Stream[ConnectionIO, RValue])
+                .asRight[String]
+                .pure[Resource[ConnectionIO, ?]]
+          }
+
+          rvalues.map(_.map(rs => QueryResult.parsed(QDataRValue, ResultData.Continuous(rs), stages)))
+      }}
 }

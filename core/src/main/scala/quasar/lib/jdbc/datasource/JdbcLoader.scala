@@ -57,7 +57,7 @@ object JdbcLoader {
           val result = Resource.liftF(discovery.tableExists(table, schema)) flatMap { exists =>
             if (exists)
               k((hygiene.hygienicIdent(table), schema.map(hygiene.hygienicIdent(_)), ir.stages))
-                .map(_.asRight[RE])
+                .map(_.leftMap(msg => RE.seekFailed(ir.path, msg)))
             else
               RE.pathNotFound[RE](ir.path)
                 .asLeft[QueryResult[ConnectionIO]]
