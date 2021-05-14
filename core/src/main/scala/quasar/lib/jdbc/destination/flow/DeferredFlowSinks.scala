@@ -18,6 +18,7 @@ package quasar.lib.jdbc.destination.flow
 
 import slamdata.Predef._
 
+import cats.Applicative
 import cats.data._
 import cats.effect._
 import cats.implicits._
@@ -46,7 +47,7 @@ trait DeferredFlowSinks[F[_], T, C] {
 
   def flowResource(args: FlowArgs[T]): Resource[F, Flow[C]]
   def render(args: FlowArgs[T]): RenderConfig[C]
-  val transactorResource: Resource[F, Transactor[F]]
+  def transactorResource(implicit F: Applicative[F]): Resource[F, Transactor[F]]
   val flowLogger: Logger
 
 
