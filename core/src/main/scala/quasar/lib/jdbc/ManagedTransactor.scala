@@ -49,13 +49,13 @@ object ManagedTransactor {
     import JdbcDriverConfig._
     driverConfig match {
       case JdbcDataSourceConfig(className, props) =>
-        Resource.liftF(Async[F].raiseError(new IllegalArgumentException("JdbcDataSourceConfig is not supported")))
+        Resource.eval(Async[F].raiseError(new IllegalArgumentException("JdbcDataSourceConfig is not supported")))
 
       case JdbcDriverManagerConfig(url, driverClassName) => 
         for {
           transacting <- transactPool[F](s"$name.transact")
 
-          clName <- Resource.liftF(
+          clName <- Resource.eval(
             driverClassName.map(_.pure[F])
               .getOrElse(Async[F].raiseError(new IllegalArgumentException("JdbcDriverManagerConfig needs a driver class"))))
 
@@ -103,7 +103,7 @@ object ManagedTransactor {
     }
 
     for {
-      hc <- Resource.liftF(hikariConfig)
+      hc <- Resource.eval(hikariConfig)
 
       awaiting <- awaitPool[F](s"$name.await", poolConfig.connectionMaxConcurrency)
       transacting <- transactPool[F](s"$name.transact")

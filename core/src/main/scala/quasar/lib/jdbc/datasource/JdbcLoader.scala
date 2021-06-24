@@ -54,7 +54,7 @@ object JdbcLoader {
             case Right((schema, table)) => (table, Some(schema))
           }
 
-          val result = Resource.liftF(discovery.tableExists(table, schema)) flatMap { exists =>
+          val result = Resource.eval(discovery.tableExists(table, schema)) flatMap { exists =>
             if (exists)
               k((hygiene.hygienicIdent(table), schema.map(hygiene.hygienicIdent(_)), ir.stages))
                 .map(_.leftMap(msg => RE.seekFailed(ir.path, msg)))
@@ -75,7 +75,7 @@ object JdbcLoader {
           }
 
         case None =>
-          Resource.liftF(MonadResourceErr[F].raiseError(RE.notAResource(ir.path)))
+          Resource.eval(MonadResourceErr[F].raiseError(RE.notAResource(ir.path)))
       }
     })
 }

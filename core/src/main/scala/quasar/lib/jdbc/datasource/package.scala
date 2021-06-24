@@ -93,14 +93,14 @@ package object datasource {
       Resource.make(FC.embed(ps, execute))(FC.embed(_, FRS.close))
 
     for {
-      t0 <- Resource.liftF(now)
+      t0 <- Resource.eval(now)
 
       er <- prepR.flatMap(execR).attempt
 
-      t1 <- Resource.liftF(now)
+      t1 <- Resource.eval(now)
 
       rs <- er.liftTo[Resource[ConnectionIO, ?]] onError {
-        case e => Resource.liftF(log(ExecFailure(sql, Nil, diff(t1, t0), e)))
+        case e => Resource.eval(log(ExecFailure(sql, Nil, diff(t1, t0), e)))
       }
 
       as = results.onFinalize(FRS.close).translate(rsEmbedK(rs)) onError {

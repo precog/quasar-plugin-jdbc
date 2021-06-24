@@ -52,10 +52,10 @@ final class JdbcDatasource[F[_]: Bracket[?[_], Throwable]: Defer] private (
   def pathIsResource(path: ResourcePath): Resource[F, Boolean] =
     resourcePathRef(path).fold(false.pure[Resource[F, ?]]) {
       case Left(table) =>
-        Resource.liftF(discovery.tableExists(table, None).transact(xa))
+        Resource.eval(discovery.tableExists(table, None).transact(xa))
 
       case Right((schema, table)) =>
-        Resource.liftF(discovery.tableExists(table, Some(schema)).transact(xa))
+        Resource.eval(discovery.tableExists(table, Some(schema)).transact(xa))
     }
 
   def prefixedChildPaths(prefixPath: ResourcePath): Resource[F, Option[Stream[F, (ResourceName, RPT.Physical)]]] = {
@@ -72,7 +72,7 @@ final class JdbcDatasource[F[_]: Bracket[?[_], Throwable]: Defer] private (
     else
       resourcePathRef(prefixPath).fold((None: Option[Out[F]]).pure[Resource[F, ?]]) {
         case Right((schema, table)) =>
-          Resource liftF {
+          Resource.eval {
             discovery.tableExists(table, Some(schema))
               .map(p => if (p) Some(Stream.empty: Out[F]) else None)
               .transact(xa)
@@ -89,7 +89,7 @@ final class JdbcDatasource[F[_]: Bracket[?[_], Throwable]: Defer] private (
           for {
             c <- xa.strategicConnection
 
-            isTable <- Resource.liftF(xa.runWith(c).apply(discovery.tableExists(ident, None)))
+            isTable <- Resource.eval(xa.runWith(c).apply(discovery.tableExists(ident, None)))
 
             opt <- if (isTable)
               Resource.pure[F, Option[Out[ConnectionIO]]](Some(Stream.empty))

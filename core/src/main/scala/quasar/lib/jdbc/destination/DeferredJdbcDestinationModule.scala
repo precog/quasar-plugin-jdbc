@@ -69,7 +69,7 @@ abstract class DeferredJdbcDestinationModule[C: DecodeJson] extends DestinationM
         Right(_))
 
     def liftF[X](fa: F[X]): EitherT[Resource[F, ?], InitError, X] =
-      EitherT.right(Resource.liftF(fa))
+      EitherT.right(Resource.eval(fa))
 
     val init = for {
       cfg <- EitherT.fromEither[Resource[F, ?]](cfg0)
