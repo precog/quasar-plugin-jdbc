@@ -37,11 +37,11 @@ import doobie._
 import quasar.RateLimiting
 import quasar.api.datasource.{DatasourceError => DE}
 import quasar.connector.{ByteStore, MonadResourceErr, ExternalCredentials}
-import quasar.connector.datasource.LightweightDatasourceModule
+import quasar.connector.datasource.DatasourceModule
 
 import org.slf4s.{Logger, LoggerFactory}
 
-/** A Quasar LightweightDatsourceModule for JDBC sources.
+/** A Quasar DatasourceModule for JDBC sources.
   *
   * Handles boilerplate common to all JDBC datasources, such as
   *   - parsing JSON into a vendor-specific config
@@ -49,7 +49,7 @@ import org.slf4s.{Logger, LoggerFactory}
   *   - validating a connection to the database can be established
   *   - logging
   */
-abstract class JdbcDatasourceModule[C: DecodeJson] extends LightweightDatasourceModule {
+abstract class JdbcDatasourceModule[C: DecodeJson] extends DatasourceModule {
 
   type InitError = DE.InitializationError[Json]
 
@@ -66,17 +66,17 @@ abstract class JdbcDatasourceModule[C: DecodeJson] extends LightweightDatasource
       byteStore: ByteStore[F],
       getAuth: UUID => F[Option[ExternalCredentials[F]]],
       log: Logger)
-      : Resource[F, Either[InitError, LightweightDatasourceModule.DS[F]]]
+      : Resource[F, Either[InitError, DatasourceModule.DS[F]]]
 
   ////
 
-  def lightweightDatasource[F[_]: ConcurrentEffect: ContextShift: MonadResourceErr: Timer, A: Hash](
+  def datasource[F[_]: ConcurrentEffect: ContextShift: MonadResourceErr: Timer, A: Hash](
       config: Json,
       rateLimiter: RateLimiting[F, A],
       byteStore: ByteStore[F],
       getAuth: UUID => F[Option[ExternalCredentials[F]]])(
       implicit ec: ExecutionContext)
-      : Resource[F, Either[InitError, LightweightDatasourceModule.DS[F]]] = {
+      : Resource[F, Either[InitError, DatasourceModule.DS[F]]] = {
 
     val id = s"${kind.name.value}-v${kind.version}"
 

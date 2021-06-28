@@ -37,7 +37,7 @@ import fs2.{Pull, Stream}
 import quasar.api.resource.{ResourceName, ResourcePath, ResourcePathType => RPT}
 import quasar.api.datasource.DatasourceType
 import quasar.connector.QueryResult
-import quasar.connector.datasource.{LightweightDatasourceModule, Loader}
+import quasar.connector.datasource.{DatasourceModule, Loader}
 import quasar.qscript.InterpretedRead
 
 import shims.equalToCats
@@ -47,7 +47,7 @@ final class JdbcDatasource[F[_]: Bracket[?[_], Throwable]: Defer] private (
     discovery: JdbcDiscovery,
     val kind: DatasourceType,
     val loaders: NonEmptyList[Loader[Resource[F, ?], InterpretedRead[ResourcePath], QueryResult[F]]])
-    extends LightweightDatasourceModule.DS[F] {
+    extends DatasourceModule.DS[F] {
 
   def pathIsResource(path: ResourcePath): Resource[F, Boolean] =
     resourcePathRef(path).fold(false.pure[Resource[F, ?]]) {
@@ -106,6 +106,6 @@ object JdbcDatasource {
       discovery: JdbcDiscovery,
       datasourceType: DatasourceType,
       loaders: NonEmptyList[Loader[Resource[F, ?], InterpretedRead[ResourcePath], QueryResult[F]]])
-      : LightweightDatasourceModule.DS[F] =
+      : DatasourceModule.DS[F] =
     new JdbcDatasource(xa, discovery, datasourceType, loaders)
 }
